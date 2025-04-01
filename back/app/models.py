@@ -1,8 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import Integer, String, Boolean, ForeignKey, Text
-
-db = SQLAlchemy()
+from app import db
 
 class Character(db.Model):
     __tablename__ = "characters"
@@ -10,7 +9,7 @@ class Character(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(64), nullable=False)
     race: Mapped[str] = mapped_column(String(32))
-    image_url: Mapped[str] = mapped_column(String(255), nullable=True)  # Cloudinary image URL
+    image_url: Mapped[str] = mapped_column(String(255), nullable=True)
 
     level: Mapped[int] = mapped_column(default=1)
     background: Mapped[str] = mapped_column(Text)
@@ -25,10 +24,34 @@ class Character(db.Model):
     abilities = relationship("Ability", back_populates="character", cascade="all, delete-orphan")
     spells = relationship("Spell", back_populates="character", cascade="all, delete-orphan")
     inventory_items = relationship("InventoryItem", back_populates="character", cascade="all, delete-orphan")
-    conditions = relationship("Condition", back_populates="character", cascade="all, delete-orphan")
-    relationships = relationship("CharacterRelationship", back_populates="character", cascade="all, delete-orphan")
-    decisions = relationship("Decision", back_populates="character", cascade="all, delete-orphan")
-    journal_entries = relationship("JournalEntry", back_populates="character", cascade="all, delete-orphan")
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "race": self.race,
+            "image_url": self.image_url,
+            "level": self.level,
+            "background": self.background,
+            "goal": self.goal,
+            "health_current": self.health_current,
+            "health_max": self.health_max,
+            "mana_current": self.mana_current,
+            "mana_max": self.mana_max,
+            "stats": [
+                {"name": stat.name, "value": stat.value}
+                for stat in self.stats
+            ]
+        }
+
+class Stat(db.Model):
+    __tablename__ = "stats"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"))
+    name: Mapped[str] = mapped_column(String(16))
+    value: Mapped[int] = mapped_column(Integer)
+
+    character = relationship("Character", back_populates="stats")
 
 
 class InventoryItem(db.Model):
