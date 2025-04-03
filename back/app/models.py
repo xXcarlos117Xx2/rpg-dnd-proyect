@@ -55,7 +55,6 @@ class Character(db.Model, Serializer):
     conditions = relationship("Condition", back_populates="character", cascade="all, delete-orphan")
 
 
-
 class Stat(db.Model, Serializer):
     __tablename__ = "stats"
 
@@ -65,7 +64,7 @@ class Stat(db.Model, Serializer):
     value: Mapped[int] = mapped_column(Integer)
 
     character = relationship("Character", back_populates="stats")
-
+    
 
 class InventoryItem(db.Model, Serializer):
     __tablename__ = "inventory_items"
