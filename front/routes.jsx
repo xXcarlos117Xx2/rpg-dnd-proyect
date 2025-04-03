@@ -1,6 +1,6 @@
-import { Routes, Route } from 'react-router-dom'
-import Layout from './Layout'
-import { Home } from './pages/Home'
+import { Routes, Route } from 'react-router-dom';
+import Layout from './Layout';
+import Home from './pages/Home';
 
 export default function RoutesApp() {
   return (
@@ -9,5 +9,5 @@ export default function RoutesApp() {
         <Route index element={<Home />} />
       </Route>
     </Routes>
-  )
+  );
 }
