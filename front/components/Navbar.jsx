@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import { Link as RouterLink } from 'react-router-dom';
+import AuthModal from './AuthModal';
 
 const navLinks = [
   { label: 'Home', path: '/' },
@@ -23,9 +24,13 @@ const navLinks = [
 ];
 
 export default function Navbar() {
+  const [authMode, setAuthMode] = useState(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const openAuthModal = (mode) => setAuthMode(mode);
+  const closeAuthModal = () => setAuthMode(null);
 
   const toggleDrawer = (open) => () => {
     setDrawerOpen(open);
@@ -46,10 +51,10 @@ export default function Navbar() {
               <ListItemText primary={item.label} />
             </ListItem>
           ))}
-          <ListItem button onClick={() => console.log("Abrir login")}>
+          <ListItem button onClick={() => { openAuthModal('login'); setDrawerOpen(false); }}>
             <ListItemText primary="Login" />
           </ListItem>
-          <ListItem button onClick={() => console.log("Abrir register")}>
+          <ListItem button onClick={() => { openAuthModal('register'); setDrawerOpen(false); }}>
             <ListItemText primary="Register" />
           </ListItem>
         </List>
@@ -58,41 +63,46 @@ export default function Navbar() {
   );
 
   return (
-    <AppBar position="static" color="primary" enableColorOnDark>
-      <Toolbar sx={{ justifyContent: 'space-between' }}>
-        <Typography
-          variant="h6"
-          component={RouterLink}
-          to="/"
-          sx={{ textDecoration: 'none', color: 'inherit' }}
-        >
-          MyApp
-        </Typography>
+    <>
+      <AppBar position="static" color="primary" enableColorOnDark>
+        <Toolbar sx={{ justifyContent: 'space-between' }}>
+          <Typography
+            variant="h6"
+            component={RouterLink}
+            to="/"
+            sx={{ textDecoration: 'none', color: 'inherit' }}
+          >
+            MyApp
+          </Typography>
 
-        {isMobile ? (
-          <>
-            <IconButton color="inherit" edge="end" onClick={toggleDrawer(true)}>
-              <MenuIcon />
-            </IconButton>
-            {drawer}
-          </>
-        ) : (
-          <Box>
-            {navLinks.map((item) => (
-              <Button
-                key={item.path}
-                component={RouterLink}
-                to={item.path}
-                color="inherit"
-              >
-                {item.label}
-              </Button>
-            ))}
-            <Button color="inherit" onClick={() => console.log('Abrir login')}>Login</Button>
-            <Button color="inherit" onClick={() => console.log('Abrir register')}>Register</Button>
-          </Box>
-        )}
-      </Toolbar>
-    </AppBar>
+          {isMobile ? (
+            <>
+              <IconButton color="inherit" edge="end" onClick={toggleDrawer(true)}>
+                <MenuIcon />
+              </IconButton>
+              {drawer}
+            </>
+          ) : (
+            <Box>
+              {navLinks.map((item) => (
+                <Button
+                  key={item.path}
+                  component={RouterLink}
+                  to={item.path}
+                  color="inherit"
+                >
+                  {item.label}
+                </Button>
+              ))}
+              <Button color="inherit" onClick={() => openAuthModal('login')}>Login</Button>
+              <Button color="inherit" onClick={() => openAuthModal('register')}>Register</Button>
+            </Box>
+          )}
+        </Toolbar>
+      </AppBar>
+      <AuthModal open={Boolean(authMode)} onClose={closeAuthModal} mode={authMode} />
+    </>
   );
+
+
 }
