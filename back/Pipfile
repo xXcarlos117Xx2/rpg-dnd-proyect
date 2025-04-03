@@ -4,6 +4,8 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+bcrypt = "*"
+flask-jwt-extended = "*"
 
 [dev-packages]
 
@@ -16,4 +18,3 @@ migrate = "flask db migrate -m 'auto'"
 upgrade = "flask db upgrade"
 initdb = "flask db init"
 install = "pip install -r requirements.txt"
-

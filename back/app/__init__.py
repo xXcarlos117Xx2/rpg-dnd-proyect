@@ -1,4 +1,5 @@
 from flask import Flask
+from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
@@ -7,6 +8,7 @@ import cloudinary
 
 db = SQLAlchemy()
 migrate = Migrate()
+jwt = JWTManager()
 
 def create_app():
     app = Flask(__name__)
@@ -14,6 +16,7 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     CORS(app)
+    jwt.init_app(app)
 
     cloudinary.config(
         cloud_name=app.config['CLOUDINARY_NAME'],

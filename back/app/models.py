@@ -1,7 +1,8 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import Integer, String, Boolean, ForeignKey, Text
+from sqlalchemy import Integer, String, ForeignKey, Text, DateTime, func
 from sqlalchemy.inspection import inspect
+from datetime import datetime
 from app import db
 
 class Serializer:
@@ -29,6 +30,7 @@ class Character(db.Model, Serializer):
     __tablename__ = "characters"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=True)
     name: Mapped[str] = mapped_column(String(64), nullable=False)
     race: Mapped[str] = mapped_column(String(32))
     image_url: Mapped[str] = mapped_column(String(255), nullable=True)
@@ -47,6 +49,11 @@ class Character(db.Model, Serializer):
     spells = relationship("Spell", back_populates="character", cascade="all, delete-orphan")
     inventory_items = relationship("InventoryItem", back_populates="character", cascade="all, delete-orphan")
 
+    user = relationship("User", back_populates="characters")
+    journal_entries = relationship("JournalEntry", back_populates="character", cascade="all, delete-orphan")
+    decisions = relationship("Decision", back_populates="character", cascade="all, delete-orphan")
+    conditions = relationship("Condition", back_populates="character", cascade="all, delete-orphan")
+
 
 class Stat(db.Model, Serializer):
     __tablename__ = "stats"
@@ -57,7 +64,7 @@ class Stat(db.Model, Serializer):
     value: Mapped[int] = mapped_column(Integer)
 
     character = relationship("Character", back_populates="stats")
-
+    
 
 class InventoryItem(db.Model, Serializer):
     __tablename__ = "inventory_items"
@@ -99,3 +106,56 @@ class Spell(db.Model, Serializer):
     uses: Mapped[int]
 
     character = relationship("Character", back_populates="spells")
+
+class JournalEntry(db.Model, Serializer):
+    __tablename__ = "journal_entries"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"))
+    content: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+
+    character = relationship("Character", back_populates="journal_entries")
+
+class Decision(db.Model, Serializer):
+    __tablename__ = "decisions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"))
+    description: Mapped[str] = mapped_column(Text)
+    impact: Mapped[str] = mapped_column(Text, nullable=True)
+
+    character = relationship("Character", back_populates="decisions")
+
+class Condition(db.Model, Serializer):
+    __tablename__ = "conditions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"))
+    name: Mapped[str]
+    description: Mapped[str]
+    temporary: Mapped[bool] = mapped_column(default=True)
+
+    character = relationship("Character", back_populates="conditions")
+
+class CharacterRelationship(db.Model, Serializer):
+    __tablename__ = "character_relationships"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    source_id: Mapped[int] = mapped_column(ForeignKey("characters.id"))
+    target_id: Mapped[int] = mapped_column(ForeignKey("characters.id"))
+    relation_type: Mapped[str] = mapped_column(String(64))
+
+    source = relationship("Character", foreign_keys=[source_id], backref="relationships_out")
+    target = relationship("Character", foreign_keys=[target_id], backref="relationships_in")
+
+class User(db.Model, Serializer):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(String(32), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(128), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+
+    characters = relationship("Character", back_populates="user", cascade="all, delete-orphan")
