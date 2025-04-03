@@ -1,9 +1,31 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import Integer, String, Boolean, ForeignKey, Text
+from sqlalchemy.inspection import inspect
 from app import db
 
-class Character(db.Model):
+class Serializer:
+    def to_dict(self, include_relationships=False):
+        result = {}
+        for column_attribute in inspect(self).mapper.column_attrs:
+            column_name = column_attribute.key
+            column_value = getattr(self, column_name)
+            result[column_name] = column_value
+        if include_relationships:
+            for relationship_property in inspect(self.__class__).relationships:
+                relation_name = relationship_property.key
+                relation_value = getattr(self, relation_name)
+
+                if isinstance(relation_value, list):
+                    result[relation_name] = [
+                        item.to_dict() for item in relation_value
+                    ]
+                elif relation_value is not None:
+                    result[relation_name] = relation_value.to_dict()
+        return result
+    
+
+class Character(db.Model, Serializer):
     __tablename__ = "characters"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -24,26 +46,9 @@ class Character(db.Model):
     abilities = relationship("Ability", back_populates="character", cascade="all, delete-orphan")
     spells = relationship("Spell", back_populates="character", cascade="all, delete-orphan")
     inventory_items = relationship("InventoryItem", back_populates="character", cascade="all, delete-orphan")
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "name": self.name,
-            "race": self.race,
-            "image_url": self.image_url,
-            "level": self.level,
-            "background": self.background,
-            "goal": self.goal,
-            "health_current": self.health_current,
-            "health_max": self.health_max,
-            "mana_current": self.mana_current,
-            "mana_max": self.mana_max,
-            "stats": [
-                {"name": stat.name, "value": stat.value}
-                for stat in self.stats
-            ]
-        }
 
-class Stat(db.Model):
+
+class Stat(db.Model, Serializer):
     __tablename__ = "stats"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -54,7 +59,7 @@ class Stat(db.Model):
     character = relationship("Character", back_populates="stats")
 
 
-class InventoryItem(db.Model):
+class InventoryItem(db.Model, Serializer):
     __tablename__ = "inventory_items"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -68,7 +73,7 @@ class InventoryItem(db.Model):
     character = relationship("Character", back_populates="inventory_items")
 
 
-class Ability(db.Model):
+class Ability(db.Model, Serializer):
     __tablename__ = "abilities"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -82,7 +87,7 @@ class Ability(db.Model):
     character = relationship("Character", back_populates="abilities")
 
 
-class Spell(db.Model):
+class Spell(db.Model, Serializer):
     __tablename__ = "spells"
 
     id: Mapped[int] = mapped_column(primary_key=True)
