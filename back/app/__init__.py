@@ -22,8 +22,8 @@ def create_app():
         secure = True
     )
 
-    from .routes import api_bp
-    app.register_blueprint(api_bp)
+    from .routes import api
+    app.register_blueprint(api)
 
     return app
 
