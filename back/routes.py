@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request, current_app
-from flask_jwt_extended import create_access_token, decode_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import create_access_token, decode_token, jwt_required, get_jwt_identity, get_jwt
 from .models import Character, Stat, InventoryItem, Ability, Spell, Condition, JournalEntry, Decision, CharacterRelationship, User, PersistentToken, db
 from datetime import datetime, timezone
 import bcrypt
@@ -757,3 +757,20 @@ def relationship_handler():
         response['message'] = 'Relación eliminada correctamente'
         response['relationship_id'] = relationship_id
         return jsonify(response), 200
+
+@api.route('/logout', methods=['POST'])
+@jwt_required()
+def logout_user():
+    response = {}
+    jti = get_jwt()["jti"]
+
+    token = db.session.query(PersistentToken).filter_by(jti=jti).first()
+
+    if token:
+        token.revoked = True
+        db.session.commit()
+        response["message"] = "Sesión cerrada correctamente"
+        return jsonify(response), 200
+    else:
+        response["error"] = "Token no encontrado o no persistente"
+        return jsonify(response), 404

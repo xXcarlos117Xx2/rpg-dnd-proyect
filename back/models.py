@@ -3,7 +3,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import Integer, String, ForeignKey, Text, DateTime, Boolean, func
 from sqlalchemy.inspection import inspect
 from datetime import datetime, timezone
-from app import db
+from back import db
 
 class Serializer:
     def to_dict(self, include_relationships=False):
