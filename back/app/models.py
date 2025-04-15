@@ -1,17 +1,22 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import Integer, String, ForeignKey, Text, DateTime, func
+from sqlalchemy import Integer, String, ForeignKey, Text, DateTime, Boolean, func
 from sqlalchemy.inspection import inspect
-from datetime import datetime
+from datetime import datetime, timezone
 from app import db
 
 class Serializer:
     def to_dict(self, include_relationships=False):
         result = {}
+        sensitive_fields = {'password', 'password_hash'}
+
         for column_attribute in inspect(self).mapper.column_attrs:
             column_name = column_attribute.key
+            if column_name in sensitive_fields:
+                continue
             column_value = getattr(self, column_name)
             result[column_name] = column_value
+
         if include_relationships:
             for relationship_property in inspect(self.__class__).relationships:
                 relation_name = relationship_property.key
@@ -23,6 +28,7 @@ class Serializer:
                     ]
                 elif relation_value is not None:
                     result[relation_name] = relation_value.to_dict()
+
         return result
     
 
@@ -159,3 +165,20 @@ class User(db.Model, Serializer):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
 
     characters = relationship("Character", back_populates="user", cascade="all, delete-orphan")
+
+class PersistentToken(db.Model):
+    __tablename__ = "persistent_tokens"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    jti: Mapped[str] = mapped_column(String(36), nullable=False, unique=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoked: Mapped[bool] = mapped_column(Boolean, default=False)
+    permanent: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    user = db.relationship("User", backref="persistent_tokens")
+
+    def mark_expired_if_needed(self):
+        if self.expires_at and datetime.now(timezone.utc) > self.expires_at:
+            self.revoked = True
