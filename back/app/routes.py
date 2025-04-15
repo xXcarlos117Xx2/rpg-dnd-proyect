@@ -4,7 +4,6 @@ from .models import Character, Stat, InventoryItem, Ability, Spell, Condition, J
 from datetime import datetime, timezone, timedelta
 import bcrypt
 import random
-from uuid import uuid4
 
 api = Blueprint('api', __name__, url_prefix='/api')
 
