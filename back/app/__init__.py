@@ -30,4 +30,11 @@ def create_app():
 
     return app
 
-from . import models
+@jwt.token_in_blocklist_loader
+def check_if_token_revoked(jwt_header, jwt_payload):
+    from .models import PersistentToken
+    jti = jwt_payload["jti"]
+    token = db.session.query(PersistentToken).filter_by(jti=jti).first()
+    return token is not None and token.revoked
+
+from . import models # Si se usa para importarlo hacia arriba a run.py y los pipfile etc
