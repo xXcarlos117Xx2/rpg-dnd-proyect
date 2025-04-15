@@ -16,6 +16,7 @@ import {
 import MenuIcon from '@mui/icons-material/Menu';
 import { Link as RouterLink } from 'react-router-dom';
 import AuthModal from './AuthModal';
+import useAuth from '../hooks/useAuth';
 
 const navLinks = [
   { label: 'Home', path: '/' },
@@ -36,6 +37,8 @@ export default function Navbar() {
     setDrawerOpen(open);
   };
 
+  const { isLoggedIn, logout } = useAuth();
+
   const drawer = (
     <Drawer anchor="left" open={drawerOpen} onClose={toggleDrawer(false)}>
       <Box sx={{ width: 250 }} role="presentation" onClick={toggleDrawer(false)}>
@@ -51,12 +54,25 @@ export default function Navbar() {
               <ListItemText primary={item.label} />
             </ListItem>
           ))}
-          <ListItem button onClick={() => { openAuthModal('login'); setDrawerOpen(false); }}>
-            <ListItemText primary="Login" />
-          </ListItem>
-          <ListItem button onClick={() => { openAuthModal('register'); setDrawerOpen(false); }}>
-            <ListItemText primary="Register" />
-          </ListItem>
+          {isLoggedIn ? (
+            <>
+              <ListItem button component={RouterLink} to="/profile" onClick={() => setDrawerOpen(false)}>
+                <ListItemText primary="Profile" />
+              </ListItem>
+              <ListItem button onClick={() => { logout(); setDrawerOpen(false); }}>
+                <ListItemText primary="Logout" />
+              </ListItem>
+            </>
+          ) : (
+            <>
+              <ListItem button onClick={() => { openAuthModal('login'); setDrawerOpen(false); }}>
+                <ListItemText primary="Login" />
+              </ListItem>
+              <ListItem button onClick={() => { openAuthModal('register'); setDrawerOpen(false); }}>
+                <ListItemText primary="Register" />
+              </ListItem>
+            </>
+          )}
         </List>
       </Box>
     </Drawer>
@@ -94,8 +110,17 @@ export default function Navbar() {
                   {item.label}
                 </Button>
               ))}
-              <Button color="inherit" onClick={() => openAuthModal('login')}>Login</Button>
-              <Button color="inherit" onClick={() => openAuthModal('register')}>Register</Button>
+              {isLoggedIn ? (
+                <>
+                  <Button component={RouterLink} to="/profile" color="inherit">Profile</Button>
+                  <Button color="inherit" onClick={logout}>Logout</Button>
+                </>
+              ) : (
+                <>
+                  <Button color="inherit" onClick={() => openAuthModal('login')}>Login</Button>
+                  <Button color="inherit" onClick={() => openAuthModal('register')}>Register</Button>
+                </>
+              )}
             </Box>
           )}
         </Toolbar>

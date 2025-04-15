@@ -24,8 +24,10 @@ dist-ssr
 *.sw?
 
 # Python related files
-back/.env
-back/migrations
-back/instance
+.env
+migrations
+instance
+__pycache__
 back/__pycache__
-back/app/__pycache__
+
+# front env
