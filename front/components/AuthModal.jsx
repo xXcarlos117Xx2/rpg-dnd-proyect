@@ -96,7 +96,7 @@ export default function AuthModal({ open, onClose, mode = 'login' }) {
           )}
 
           <TextField
-            label="Email"
+            label={isLogin ? 'Usuario o email' : 'Email'}
             variant="outlined"
             type="email"
             fullWidth
