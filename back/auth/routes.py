@@ -1,5 +1,5 @@
 from flask import Blueprint, request, current_app, jsonify
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token, create_refresh_token, get_jwt
 from back.models import User, db
 from back.utils import validate_required_fields
 from datetime import datetime, timezone
@@ -59,12 +59,37 @@ def login_user():
     elif not bcrypt.checkpw(data['password'].encode('utf-8'), user.password_hash.encode('utf-8')):
         current_app.logger.warning(f"Intento de login fallido: contraseña incorrecta para '{data['username']}'.")
     else:
-        user.last_login = datetime.now(timezone.utc)
-        db.session.commit()
-        token = create_access_token(identity=user.id)
+        access_token = create_access_token(identity=user.id)
+        refresh_token = create_refresh_token(identity=user.id)
+
         response['message'] = 'Login exitoso'
-        response['token'] = token
+        response['access_token'] = access_token
+        response['refresh_token'] = refresh_token
         return jsonify(response), 200
 
     response['error'] = 'Credenciales inválidas'
     return jsonify(response), 401
+
+@auth.route('/userinfo', methods=['GET'])
+@jwt_required()
+def get_user_info():
+    user_id = get_jwt_identity()
+    user = User.query.filter_by(id=user_id).first()
+
+    if not user:
+        return jsonify({'error': 'Usuario no encontrado'}), 404
+
+    return jsonify({
+        'id': user.id,
+        'username': user.username,
+        'email': user.email,
+        'created_at': user.created_at.isoformat()
+    }), 200
+
+
+@auth.route('/refresh', methods=['POST'])
+@jwt_required(refresh=True)
+def refresh_token():
+    identity = get_jwt_identity()
+    new_token = create_access_token(identity=identity)
+    return jsonify({'access_token': new_token}), 200
