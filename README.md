@@ -114,7 +114,7 @@ npm run dev
 
 ✅ Backend funcional (Flask + SQLite + Cloudinary)  
 ✅ Frontend React (con rutas modernas y layout base)  
-🚧 CRUD de personajes en desarrollo  
+✅ CRUD de personajes en desarrollo  
 🚧 Subida de imágenes vía Cloudinary  
 🚧 Panel de administración y fichas individuales  
 

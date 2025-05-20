@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request, current_app
 from flask_jwt_extended import create_access_token, decode_token, jwt_required, get_jwt_identity, get_jwt
-from .models import Character, Stat, InventoryItem, Ability, Spell, Condition, JournalEntry, Decision, CharacterRelationship, User, PersistentToken, db
+from .models import Character, Stat, InventoryItem, Ability, Spell, Condition, JournalEntry, Decision, CharacterRelationship, User, db
 from datetime import datetime, timezone
 import bcrypt
 import random
@@ -13,25 +13,6 @@ def validate_required_fields(data, *fields):
     if missing:
         return False, f'Faltan los siguientes campos: {", ".join(missing)}'
     return True, None
-
-def cleanup_expired_tokens():
-    now = datetime.now(timezone.utc)
-    expired_tokens = PersistentToken.query.filter(
-        PersistentToken.permanent == False,
-        PersistentToken.revoked == False,
-        PersistentToken.created_at < now - current_app.config["JWT_ACCESS_TOKEN_EXPIRES"]
-    ).all()
-
-    for token in expired_tokens:
-        token.revoked = True
-
-    db.session.commit()
-    return len(expired_tokens)
-
-@api.route('/test/cleanup_tokens', methods=['POST'])
-def trigger_cleanup():
-    count = cleanup_expired_tokens()
-    return jsonify({"message": f"{count} token(s) expirados han sido revocados"}), 200
 
 @api.route('/ping', methods=['GET'])
 def ping():
@@ -124,75 +105,20 @@ def login_user():
         response['error'] = 'Credenciales incorrectas'
         return jsonify(response), 401
 
-    if data.get("no_expire"):
-        access_token = create_access_token(
-            identity=str(user.id),
-            expires_delta=False,
-            additional_claims={"no_expire": True}
-        )
-        jti = decode_token(access_token)["jti"]
-        db.session.add(PersistentToken(
-            jti=jti, 
-            user_id=user.id, 
-            permanent=True
-        ))
-        db.session.commit()
-    else:
-        access_token = create_access_token(identity=str(user.id))
-        decoded = decode_token(access_token)
-        jti = decoded['jti']
-        expires_in = current_app.config["JWT_ACCESS_TOKEN_EXPIRES"]
-        db.session.add(PersistentToken(
-            jti=jti,
-            user_id=user.id,
-            permanent=False,
-            expires_at=datetime.now(timezone.utc) + expires_in
-        ))
-        db.session.commit()
+    now = datetime.now(timezone.utc)
+    user.last_login = now
+    db.session.commit()
+
+    claims = {
+        "ip": request.remote_addr,
+        "issued_at": now.isoformat()
+    }
+
+    access_token = create_access_token(identity=str(user.id), additional_claims=claims)
 
     response['message'] = 'Login exitoso'
     response['access_token'] = access_token
     response['user_id'] = user.id
-    return jsonify(response), 200
-
-@api.route('/revoke_tokens', methods=['POST'])
-def revoke_tokens():
-    response = {}
-    data = request.get_json() or {}
-
-    valid, error = validate_required_fields(data, 'user', 'password')
-    if not valid:
-        response['error'] = error
-        return jsonify(response), 400
-
-    user = User.query.filter(
-        (User.username == data['user']) | (User.email == data['user'])
-    ).first()
-
-    if not user or not bcrypt.checkpw(data['password'].encode('utf-8'), user.password_hash.encode('utf-8')):
-        response['error'] = 'Credenciales incorrectas'
-        return jsonify(response), 401
-
-    tokens = PersistentToken.query.filter_by(user_id=user.id, revoked=False).all()
-
-    revoked_total = 0
-    revoked_persistent = 0
-    revoked_temporal = 0
-
-    for token in tokens:
-        token.revoked = True
-        revoked_total += 1
-        if token.permanent:
-            revoked_persistent += 1
-        else:
-            revoked_temporal += 1
-
-    db.session.commit()
-
-    response['message'] = 'Tokens revocados correctamente'
-    response['revoked_total'] = revoked_total
-    response['revoked_persistent'] = revoked_persistent
-    response['revoked_temporal'] = revoked_temporal
     return jsonify(response), 200
 
 @api.route('/user', methods=['GET'])
@@ -647,9 +573,6 @@ def journal_handler():
         response['entry_id'] = entry_id
         return jsonify(response), 200
 
-from .models import Decision
-from flask_jwt_extended import jwt_required, get_jwt_identity
-
 @api.route('/decision', methods=['GET', 'POST', 'DELETE'])
 @jwt_required()
 def decision_handler():
@@ -702,8 +625,6 @@ def decision_handler():
         response['message'] = 'Decisión eliminada correctamente'
         response['decision_id'] = decision_id
         return jsonify(response), 200
-
-from .models import CharacterRelationship
 
 @api.route('/relationship', methods=['GET', 'POST', 'DELETE'])
 @jwt_required()
@@ -762,15 +683,11 @@ def relationship_handler():
 @jwt_required()
 def logout_user():
     response = {}
-    jti = get_jwt()["jti"]
+    user_id = get_jwt_identity()
 
-    token = db.session.query(PersistentToken).filter_by(jti=jti).first()
+    user = User.query.get_or_404(user_id)
+    user.last_logout = datetime.now(timezone.utc)
+    db.session.commit()
 
-    if token:
-        token.revoked = True
-        db.session.commit()
-        response["message"] = "Sesión cerrada correctamente"
-        return jsonify(response), 200
-    else:
-        response["error"] = "Token no encontrado o no persistente"
-        return jsonify(response), 404
+    response['message'] = 'Sesión cerrada correctamente'
+    return jsonify(response), 200

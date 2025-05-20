@@ -1,9 +1,11 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import Integer, String, ForeignKey, Text, DateTime, Boolean, func
+from sqlalchemy import Integer, String, ForeignKey, Text, DateTime
 from sqlalchemy.inspection import inspect
 from datetime import datetime, timezone
-from back import db
+from flask_sqlalchemy import SQLAlchemy
+
+db = SQLAlchemy()
 
 class Serializer:
     def to_dict(self, include_relationships=False):
@@ -30,7 +32,6 @@ class Serializer:
                     result[relation_name] = relation_value.to_dict()
 
         return result
-    
 
 class Character(db.Model, Serializer):
     __tablename__ = "characters"
@@ -60,7 +61,6 @@ class Character(db.Model, Serializer):
     decisions = relationship("Decision", back_populates="character", cascade="all, delete-orphan")
     conditions = relationship("Condition", back_populates="character", cascade="all, delete-orphan")
 
-
 class Stat(db.Model, Serializer):
     __tablename__ = "stats"
 
@@ -71,7 +71,6 @@ class Stat(db.Model, Serializer):
 
     character = relationship("Character", back_populates="stats")
     
-
 class InventoryItem(db.Model, Serializer):
     __tablename__ = "inventory_items"
 
@@ -84,7 +83,6 @@ class InventoryItem(db.Model, Serializer):
     notes: Mapped[str] = mapped_column(Text, nullable=True)
 
     character = relationship("Character", back_populates="inventory_items")
-
 
 class Ability(db.Model, Serializer):
     __tablename__ = "abilities"
@@ -99,7 +97,6 @@ class Ability(db.Model, Serializer):
 
     character = relationship("Character", back_populates="abilities")
 
-
 class Spell(db.Model, Serializer):
     __tablename__ = "spells"
 
@@ -110,6 +107,7 @@ class Spell(db.Model, Serializer):
     description: Mapped[str]
     image_url: Mapped[str] = mapped_column(String(255), nullable=True)
     uses: Mapped[int]
+    uses_max: Mapped[int] = mapped_column(default=1)
 
     character = relationship("Character", back_populates="spells")
 
@@ -119,7 +117,7 @@ class JournalEntry(db.Model, Serializer):
     id: Mapped[int] = mapped_column(primary_key=True)
     character_id: Mapped[int] = mapped_column(ForeignKey("characters.id"))
     content: Mapped[str] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     character = relationship("Character", back_populates="journal_entries")
 
@@ -162,23 +160,6 @@ class User(db.Model, Serializer):
     username: Mapped[str] = mapped_column(String(32), unique=True, nullable=False)
     email: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(128), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     characters = relationship("Character", back_populates="user", cascade="all, delete-orphan")
-
-class PersistentToken(db.Model):
-    __tablename__ = "persistent_tokens"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    jti: Mapped[str] = mapped_column(String(36), nullable=False, unique=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
-    revoked: Mapped[bool] = mapped_column(Boolean, default=False)
-    permanent: Mapped[bool] = mapped_column(Boolean, default=False)
-
-    user = db.relationship("User", backref="persistent_tokens")
-
-    def mark_expired_if_needed(self):
-        if self.expires_at and datetime.now(timezone.utc) > self.expires_at:
-            self.revoked = True
