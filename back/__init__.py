@@ -32,9 +32,29 @@ def create_app():
 
 @jwt.token_in_blocklist_loader
 def check_if_token_revoked(jwt_header, jwt_payload):
-    from .models import PersistentToken
-    jti = jwt_payload["jti"]
-    token = db.session.query(PersistentToken).filter_by(jti=jti).first()
-    return token is not None and token.revoked
+    from .models import User
+    from flask import request
+    from datetime import datetime
+
+    user = db.session.get(User, int(jwt_payload["sub"]))
+    if not user:
+        return True  # El usuario ya no existe
+    
+    issued_at_str = jwt_payload.get("issued_at")
+    if issued_at_str:
+        try:
+            issued_at = datetime.fromisoformat(issued_at_str)
+            if user.last_logout and issued_at <= user.last_logout:
+                return True
+        except Exception as e:
+            print(f"[ERROR] Error parsing issued_at: {e}")
+            return True
+
+    token_ip = jwt_payload.get("ip")
+    current_ip = request.remote_addr
+    if token_ip and token_ip != current_ip:
+        print(f"[WARN] Cambio de IP detectado: Token: {token_ip}, Actual: {current_ip}")
+
+    return False
 
 from . import models # Si se usa para importarlo hacia arriba a run.py y los pipfile etc
