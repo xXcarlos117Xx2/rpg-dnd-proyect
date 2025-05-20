@@ -159,7 +159,4 @@ class User(db.Model, Serializer):
     password_hash: Mapped[str] = mapped_column(String(128), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
-    last_login: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    last_logout: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=None)
-
     characters = relationship("Character", back_populates="user", cascade="all, delete-orphan")
