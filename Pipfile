@@ -12,6 +12,7 @@ flask-cors = "*"
 flask-sqlalchemy = "*"
 python-dotenv = "*"
 cloudinary = "*"
+pytest-cov = "*"
 
 [dev-packages]
 pytest = "*"

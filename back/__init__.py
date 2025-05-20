@@ -14,8 +14,8 @@ from back.spell.routes import spell
 from back.condition.routes import condition
 from back.notes.routes import notes
 from back.relationship.routes import relationship
+from back.models import db
 
-db = SQLAlchemy()
 jwt = JWTManager()
 migrate = Migrate()
 

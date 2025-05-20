@@ -3,7 +3,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import Integer, String, ForeignKey, Text, DateTime
 from sqlalchemy.inspection import inspect
 from datetime import datetime, timezone
-from back import db
+from flask_sqlalchemy import SQLAlchemy
+
+db = SQLAlchemy()
 
 class Serializer:
     def to_dict(self, include_relationships=False):

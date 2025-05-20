@@ -32,12 +32,10 @@ def register_user():
         email=data['email'],
         password_hash=hashed,
         created_at=now,
-        last_login=now,
-        last_logout=now
     )
     db.session.add(user)
     db.session.commit()
-
+    
     response['message'] = 'Usuario registrado correctamente'
     response['user_id'] = user.id
     return jsonify(response), 201
@@ -47,20 +45,22 @@ def login_user():
     response = {}
     data = request.get_json() or {}
 
-    valid, error = validate_required_fields(data, 'username', 'password')
+    valid, error = validate_required_fields(data, 'login_name', 'password')
     if not valid:
         response['error'] = error
         return jsonify(response), 400
 
-    user = User.query.filter_by(username=data['username']).first()
+    user = User.query.filter(
+        (User.username == data['login_name']) | (User.email == data['login_name'])
+    ).first()
 
     if not user:
-        current_app.logger.warning(f"Intento de login fallido: usuario '{data['username']}' no existe.")
+        current_app.logger.warning(f"Intento de login fallido: usuario '{data['login_name']}' no existe.")
     elif not bcrypt.checkpw(data['password'].encode('utf-8'), user.password_hash.encode('utf-8')):
-        current_app.logger.warning(f"Intento de login fallido: contraseña incorrecta para '{data['username']}'.")
+        current_app.logger.warning(f"Intento de login fallido: contraseña incorrecta para '{data['login_name']}'.")
     else:
-        access_token = create_access_token(identity=user.id)
-        refresh_token = create_refresh_token(identity=user.id)
+        access_token = create_access_token(identity=str(user.id))
+        refresh_token = create_refresh_token(identity=str(user.id))
 
         response['message'] = 'Login exitoso'
         response['access_token'] = access_token
@@ -91,5 +91,5 @@ def get_user_info():
 @jwt_required(refresh=True)
 def refresh_token():
     identity = get_jwt_identity()
-    new_token = create_access_token(identity=identity)
+    new_token = create_access_token(identity=str(identity))
     return jsonify({'access_token': new_token}), 200

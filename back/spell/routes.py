@@ -39,7 +39,7 @@ def create_spell():
         type=data['type'],
         description=data['description'],
         uses=data['uses'],
-        uses_max=data['uses_max'],
+        uses_max=data.get('uses_max', 1),
         image_url=data.get('image_url')
     )
     db.session.add(spell)
