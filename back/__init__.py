@@ -14,6 +14,7 @@ from back.spell.routes import spell
 from back.condition.routes import condition
 from back.notes.routes import notes
 from back.relationship.routes import relationship
+from back.misc.routes import misc
 from back.models import db
 
 jwt = JWTManager()
@@ -36,5 +37,6 @@ def create_app():
     app.register_blueprint(condition, url_prefix='/api')
     app.register_blueprint(notes, url_prefix='/api')
     app.register_blueprint(relationship, url_prefix='/api')
+    app.register_blueprint(misc, url_prefix='/api')
 
     return app
