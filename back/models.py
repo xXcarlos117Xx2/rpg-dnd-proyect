@@ -105,6 +105,7 @@ class Spell(db.Model, Serializer):
     description: Mapped[str]
     image_url: Mapped[str] = mapped_column(String(255), nullable=True)
     uses: Mapped[int]
+    uses_max: Mapped[int] = mapped_column(default=1)
 
     character = relationship("Character", back_populates="spells")
 
