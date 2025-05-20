@@ -3,7 +3,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import Integer, String, ForeignKey, Text, DateTime
 from sqlalchemy.inspection import inspect
 from datetime import datetime, timezone
-from back import db
+from flask_sqlalchemy import SQLAlchemy
+
+db = SQLAlchemy()
 
 class Serializer:
     def to_dict(self, include_relationships=False):
@@ -105,6 +107,7 @@ class Spell(db.Model, Serializer):
     description: Mapped[str]
     image_url: Mapped[str] = mapped_column(String(255), nullable=True)
     uses: Mapped[int]
+    uses_max: Mapped[int] = mapped_column(default=1)
 
     character = relationship("Character", back_populates="spells")
 
@@ -158,8 +161,5 @@ class User(db.Model, Serializer):
     email: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(128), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
-
-    last_login: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    last_logout: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=None)
 
     characters = relationship("Character", back_populates="user", cascade="all, delete-orphan")

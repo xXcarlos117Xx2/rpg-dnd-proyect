@@ -12,8 +12,11 @@ flask-cors = "*"
 flask-sqlalchemy = "*"
 python-dotenv = "*"
 cloudinary = "*"
+pytest-cov = "*"
 
 [dev-packages]
+pytest = "*"
+Flask-Testing = "*"
 
 [requires]
 python_version = "3.12"
