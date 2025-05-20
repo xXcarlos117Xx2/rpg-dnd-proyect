@@ -14,6 +14,8 @@ python-dotenv = "*"
 cloudinary = "*"
 
 [dev-packages]
+pytest = "*"
+Flask-Testing = "*"
 
 [requires]
 python_version = "3.12"
